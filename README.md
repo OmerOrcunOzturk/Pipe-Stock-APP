@@ -1,213 +1,223 @@
-# BoruStok
+# BoruStok (Pipe Stock App)
 
-Köylere dağıtılan içme suyu ve koruge borularının stok takibi için web
-uygulaması. Kurum içindeki tek bir bilgisayarda çalışır; diğer bilgisayarlar
-ona tarayıcıdan bağlanır. İnternet, bulut hizmeti ya da Docker gerektirmez.
+A web application for tracking the stock of drinking-water and corrugated
+pipes distributed to villages. It runs on a single computer inside the
+organisation; other computers connect to it from a browser. It needs no
+internet connection, no cloud service and no Docker.
 
-## Ne yapar
+The user interface is in Turkish.
 
-- **Stok girişi:** depoya gelen boruları adet ve metre olarak kaydeder.
-- **Dağıtım:** köye verilen boruları kaydeder; stok kendiliğinden düşer,
-  depodakinden fazlası verilemez.
-- **Talep formları:** her dağıtım için Ambar Talep Formu ve Malzeme Talep
-  Fişini, kurumun kendi Excel şablonu üzerinde köy, tarih, muhtar ve boru
-  bilgileriyle doldurulmuş olarak indirir.
-- **Sayım düzeltmesi ve iptal:** kayıtlar silinmez; hatalı belge ters kayıtla
-  iptal edilir, böylece geçmiş her zaman izlenebilir.
-- **Raporlar:** köy bazında dağıtım, boru tipi bazında özet ve hareket dökümü;
-  Excel'e aktarılabilir.
-- **Roller:** yönetici (her şey), depo sorumlusu (giriş ve dağıtım), izleyici
-  (yalnızca görüntüleme).
-- **Denetim kaydı:** tanımlarda ve kullanıcılarda yapılan her değişiklik, kimin
-  yaptığıyla birlikte saklanır.
+## What it does
 
-## Nasıl çalışır
+- **Stock receipts:** records pipes arriving at the warehouse, in pieces and
+  metres.
+- **Distributions:** records pipes handed to a village; stock is reduced
+  automatically and more than what is in the warehouse cannot be given out.
+- **Request forms:** for every distribution, downloads the warehouse request
+  form (Ambar Talep Formu) and the material request slip (Malzeme Talep Fişi)
+  as Excel files, filled in on the organisation's own template with the
+  village, date, village headman (muhtar) and pipe lines.
+- **Count adjustments and cancellations:** records are never deleted; a wrong
+  document is cancelled with a reversing entry, so history stays traceable.
+- **Reports:** distribution per village, summary per pipe type and a movement
+  list, all exportable to Excel.
+- **Roles:** admin (everything), warehouse clerk (receipts and distributions),
+  viewer (read-only).
+- **Audit log:** every change to definitions and users is stored together
+  with who made it.
+
+## How it works
 
 ```
-Tarayıcı (ofisteki bilgisayarlar, telefonlar)
-        │  http://SUNUCU-IP:8080
+Browser (office computers, phones)
+        │  http://SERVER-IP:8080
         ▼
-server/sunucu.mjs  ──  uygulama dosyaları (dist/)
-        │              giriş ve oturum (/auth/v1)
+server/sunucu.mjs  ──  application files (dist/)
+        │              sign-in and sessions (/auth/v1)
         ▼
-PostgREST  ──  veri arayüzü (/rest/v1)
+PostgREST  ──  data API (/rest/v1)
         ▼
-PostgreSQL ──  tablolar, yetkiler (RLS), stok kuralları
+PostgreSQL ──  tables, permissions (RLS), stock rules
 ```
 
-İş kurallarının tamamı (stok yeterliliği, yetkiler, çift kayıt önleme)
-veritabanındadır; arayüz bunları atlayamaz.
+All business rules (stock sufficiency, permissions, duplicate-request
+protection) live in the database; the interface cannot bypass them.
 
-| Katman | Teknoloji |
+| Layer | Technology |
 |---|---|
-| Arayüz | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Veri erişimi | supabase-js → PostgREST |
-| Veritabanı | PostgreSQL 15+ (satır güvenliği ve PL/pgSQL fonksiyonları) |
-| Sunucu | Node.js 22+, harici paket kullanmaz |
+| Interface | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| Data access | supabase-js → PostgREST |
+| Database | PostgreSQL 15+ (row-level security and PL/pgSQL functions) |
+| Server | Node.js 22+, no external packages |
 | Excel | ExcelJS |
 
-## Kurulum
+## Installation
 
-Sunucu bilgisayarına kurulum adım adım [server/KURULUM.md](server/KURULUM.md)
-dosyasında anlatılır. Özet:
+Step-by-step installation on the server computer is described in
+[server/KURULUM.md](server/KURULUM.md) (in Turkish). In short:
 
-1. Node.js ve PostgreSQL kurulur.
-2. PostgREST indirilip `server/bin/` içine konur.
-3. `npm run build` ile uygulama derlenir.
-4. `node server/kur.mjs` veritabanını kurar ve ilk yöneticiyi oluşturur.
-5. `node server/sunucu.mjs` uygulamayı ağa sunar.
+1. Install Node.js and PostgreSQL.
+2. Download PostgREST and place it in `server/bin/`.
+3. Build the application with `npm run build`.
+4. `node server/kur.mjs` sets up the database and creates the first admin.
+5. `node server/sunucu.mjs` serves the application on the network.
 
-Windows'ta 4. ve sonraki adımları `KUR.bat` tek seferde yapar; bilgisayar
-açılışında otomatik başlatmayı, günlük yedeği ve güvenlik duvarı kuralını da
-ayarlar.
+On Windows, `KUR.bat` performs step 4 and everything after it in one go; it
+also sets up start-on-boot, a daily backup and the firewall rule.
 
-## Geliştirme
+## Development
 
 ```bash
 npm install
-npm run kur       # yerel veritabanını kurar (PostgreSQL ve PostgREST gerekir)
-npm run sunucu    # 8080 portunda sunucu
-npm run dev       # 5173 portunda arayüz; veri isteklerini sunucuya aktarır
+npm run kur       # sets up the local database (needs PostgreSQL and PostgREST)
+npm run sunucu    # server on port 8080
+npm run dev       # interface on port 5173; proxies data requests to the server
 ```
 
-| Komut | İşlevi |
+| Command | Purpose |
 |---|---|
-| `npm run build` | Tip denetimi ve üretim derlemesi (`dist/`) |
-| `npm run typecheck` | Yalnızca tip denetimi |
+| `npm run build` | Type check and production build (`dist/`) |
+| `npm run typecheck` | Type check only |
 | `npm run lint` | oxlint |
-| `npm run yedekle` | Veritabanı yedeği alır |
+| `npm run yedekle` | Takes a database backup |
 
-### Klasörler
+### Folders
 
-| Klasör | İçerik |
+| Folder | Contents |
 |---|---|
-| `src/features/` | Ekranlar, özellik bazında (stok, dağıtım, raporlar, kullanıcılar …) |
-| `src/features/distributions/templates/` | Talep formlarının Excel şablonları |
-| `supabase/migrations/` | Veritabanı şeması; kurulum programı sırayla uygular |
-| `supabase/tests/` | Veritabanı kurallarının SQL testleri |
-| `server/` | Yerel sunucu, kurulum ve yedekleme programları |
+| `src/features/` | Screens, organised by feature (stock, distributions, reports, users …) |
+| `src/features/distributions/templates/` | Excel templates for the request forms |
+| `supabase/migrations/` | Database schema; the setup program applies the files in order |
+| `supabase/tests/` | SQL tests for the database rules |
+| `server/` | Local server, setup and backup programs |
 
-Klasör adındaki `supabase`, projenin başlangıçta Supabase üzerinde
-geliştirilmiş olmasından gelir. Yerel sunucu aynı arayüzü sunduğu için şema
-dosyaları ve arayüz kodu değişmeden kullanılır.
+The `supabase` folder name is a leftover from the project's start on
+Supabase. The local server exposes the same API, so the schema files and the
+interface code are used unchanged.
 
-## Sık sorulan sorular
+## Frequently asked questions
 
-### Genel
+### General
 
-**İnternet gerekir mi?**
-Hayır. Kurulum sırasında programları indirmek dışında internet kullanılmaz.
-Veriler kurum dışına çıkmaz.
+**Does it need the internet?**
+No. Apart from downloading the programs during installation, the internet is
+not used. Data never leaves the organisation.
 
-**Diğer bilgisayarlara bir şey kurmak gerekir mi?**
-Hayır. Tarayıcıdan sunucunun adresi açılır. İstenirse masaüstüne kısayol
-eklenir.
+**Does anything need to be installed on the other computers?**
+No. They open the server's address in a browser. A desktop shortcut can be
+added if wanted.
 
-**Telefondan kullanılabilir mi?**
-Evet, telefon kurumun ağına (Wi-Fi) bağlıysa. Arayüz küçük ekrana uyumludur.
+**Can it be used from a phone?**
+Yes, if the phone is on the organisation's network (Wi-Fi). The interface
+adapts to small screens.
 
-**Sunucu bilgisayarı ne kadar güçlü olmalı?**
-Normal bir ofis bilgisayarı yeterlidir. Üç parça birlikte yaklaşık 300 MB RAM
-kullanır; 4 GB RAM'li bir bilgisayarda sorunsuz çalışır. Aynı bilgisayar
-günlük işler için kullanılmaya devam edebilir.
+**How powerful does the server computer need to be?**
+An ordinary office computer is enough. The three parts together use about
+300 MB of RAM; it runs comfortably on a computer with 4 GB. The same computer
+can stay in everyday use.
 
-**Kaç kişi aynı anda kullanabilir?**
-Bir ofis için pratikte sınır yoktur. İki kişi aynı anda aynı boruyu dağıtmaya
-çalışırsa veritabanı kayıtları sıraya koyar; stok eksiye düşmez.
+**How many people can use it at the same time?**
+For an office there is no practical limit. If two people try to distribute
+the same pipe at the same moment, the database queues the two requests; stock
+never goes negative.
 
-**Sunucu kapalıyken ne olur?**
-Uygulama açılmaz. Sunucu açıldığında kaldığı yerden devam eder; veri kaybı
-olmaz.
+**What happens while the server is switched off?**
+The application does not open. When the server is switched on again it
+continues where it left off; no data is lost.
 
-### Veri ve güvenlik
+### Data and security
 
-**Veriler nerede durur?**
-Sunucu bilgisayarındaki PostgreSQL veritabanında.
-Başka hiçbir yere gönderilmez.
+**Where is the data stored?**
+In the PostgreSQL database on the server computer. It is not sent anywhere
+else.
 
-**Yedek nasıl alınır?**
-`KUR.bat` her gün 12:30 için otomatik yedek ayarlar; yedekler `yedekler/`
-klasörüne yazılır ve son 30 tanesi saklanır. Disk arızasına karşı yedek
-klasörünü başka bir diske ya da ağ klasörüne yönlendirmeniz önerilir
-(bkz. KURULUM.md).
+**How are backups taken?**
+`KUR.bat` schedules an automatic backup every day at 12:30; backups are
+written to the `yedekler/` folder and the latest 30 are kept. To protect
+against disk failure, point the backup folder at another disk or a network
+share (see KURULUM.md).
 
-**Bağlantı şifreli mi?**
-Hayır, `http` kullanılır. Bu yüzden uygulama yalnızca kurum içi ağda
-kullanılmalı, sunucu portu internete açılmamalıdır. İnternetten erişim
-gerekiyorsa önüne HTTPS sağlayan bir ters vekil sunucu konmalıdır.
+**Is the connection encrypted?**
+No, it uses plain `http`. The application should therefore be used only on
+the internal network, and the server port must not be exposed to the
+internet. If access from the internet is needed, put a reverse proxy that
+provides HTTPS in front of it.
 
-**Şifreler nasıl saklanır?**
-bcrypt özeti olarak. Yönetici dahil kimse mevcut şifreleri göremez; yalnızca
-yenisini atayabilir. Art arda hatalı girişlerde geçici engel uygulanır.
+**How are passwords stored?**
+As bcrypt hashes. Nobody, including admins, can see existing passwords; an
+admin can only set a new one. Repeated failed sign-ins are temporarily
+blocked.
 
-**Bir kayıt yanlış girildi, silinebilir mi?**
-Stok belgeleri silinmez, iptal edilir: belge listede "iptal edildi" olarak
-kalır ve stok etkisi geri alınır. Hiç kullanılmamış boru tipi ve köy tanımları
-silinebilir; kullanılmış olanlar pasife alınır.
+**A record was entered wrongly. Can it be deleted?**
+Stock documents are not deleted, they are cancelled: the document stays in
+the list marked as cancelled and its effect on stock is reversed. Pipe types
+and villages that were never used can be deleted; used ones are deactivated.
 
-**Yönetici şifresi unutulursa?**
-Başka bir yönetici Tanımlar → Kullanıcılar ekranından sıfırlar. Hiç yönetici
-kalmadıysa şifre, sunucu bilgisayarında veritabanı üzerinden sıfırlanır.
+**What if the admin password is forgotten?**
+Another admin resets it under Tanımlar → Kullanıcılar. If no admin is left,
+the password is reset directly in the database on the server computer.
 
-### Excel formları
+### Excel forms
 
-**Kendi kurumumun formlarını kullanabilir miyim?**
-Evet. Depodaki şablonlar örnektir ve imza adları yer tutucudur. Kendi
-dosyalarınızı aynı adlarla
-`src/features/distributions/templates/ozel/` klasörüne koyup uygulamayı
-yeniden derleyin; uygulama o klasördekileri kullanır. Bu klasör depoya
-girmez.
+**Can I use my own organisation's forms?**
+Yes. The templates in the repository are examples and the signature names are
+placeholders. Put your own files, with the same names, in
+`src/features/distributions/templates/ozel/` and rebuild; the application
+uses the files in that folder. The folder is not committed to the
+repository.
 
-**Şablonumun düzeni farklıysa?**
-Hangi hücreye neyin yazılacağı
-[`talepForms.ts`](src/features/distributions/talepForms.ts) içindeki `layouts`
-tablosunda tanımlıdır (sayfa adı, köy/tarih/muhtar hücreleri, boru
-satırlarının başladığı satır ve sütunlar). Düzeniniz farklıysa bu tabloyu
-güncellemeniz yeterlidir.
+**What if my template has a different layout?**
+Which cell receives which value is defined in the `layouts` table in
+[`talepForms.ts`](src/features/distributions/talepForms.ts) (sheet name, the
+village/date/headman cells, the first pipe row and the columns). If your
+layout differs, updating that table is enough.
 
-**Şablondaki diğer sayfalara ne olur?**
-Dokunulmaz. Yalnızca tanımlı sayfalar doldurulur; diğer sayfalar hücre, biçim
-ve yazdırma düzeniyle aynen korunur.
+**What happens to the other sheets in the template?**
+They are left untouched. Only the defined sheets are filled in; the other
+sheets keep their cells, formatting and print layout exactly.
 
-**Bir dağıtımda şablondaki satır sayısından fazla kalem varsa?**
-Dosya üretilmez ve uyarı gösterilir; form eksik kalemle basılmaz.
+**What if a distribution has more lines than the template has rows?**
+No file is produced and a warning is shown; a form is never printed with
+missing lines.
 
-### Teknik
+### Technical
 
-**Neden Docker yok?**
-Hedef ortam, Docker kurulamayan ve bulut hizmeti kullanılamayan kurum
-bilgisayarlarıdır. Bu yüzden her parça normal bir program olarak kurulur.
+**Why no Docker?**
+The target environment is office computers where Docker cannot be installed
+and cloud services cannot be used. Every part is therefore installed as an
+ordinary program.
 
-**Supabase ile kullanılabilir mi?**
-Evet. `supabase/migrations` bir Supabase projesine uygulanıp `.env.local`
-dosyasında `VITE_SUPABASE_URL` ve `VITE_SUPABASE_PUBLISHABLE_KEY` tanımlanırsa
-arayüz o projeye bağlanır. Yalnızca kullanıcı ekleme ve şifre sıfırlama
-ekranı çalışmaz (o fonksiyonlar yerel sunucuya özgüdür); kullanıcılar
-Supabase panelinden eklenir.
+**Can it be used with Supabase?**
+Yes. If `supabase/migrations` is applied to a Supabase project and
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are defined in
+`.env.local`, the interface connects to that project. Only the screen for
+adding users and resetting passwords will not work (those functions are
+specific to the local server); users are added from the Supabase dashboard
+instead.
 
-**Linux'ta çalışır mı?**
-Evet, sunucu programları platformdan bağımsızdır ve Linux'ta denenmiştir.
-`KUR.bat` ve `otomatik-baslat.ps1` yalnızca Windows içindir; Linux'ta
-otomatik başlatma için bir systemd birimi yazmanız gerekir.
+**Does it run on Linux?**
+Yes, the server programs are platform-independent and were tested on Linux.
+`KUR.bat` and `otomatik-baslat.ps1` are Windows-only; on Linux you need to
+write a systemd unit for start-on-boot.
 
-**Güncelleme nasıl yapılır?**
-Yeni `dist/`, `server/` ve `supabase/migrations/` sunucuya kopyalanır ve
-kurulum programı yeniden çalıştırılır. Program yalnızca yeni şema
-değişikliklerini uygular; mevcut veriye dokunmaz.
+**How is it updated?**
+Copy the new `dist/`, `server/` and `supabase/migrations/` to the server and
+run the setup program again. It applies only new schema changes and does not
+touch existing data.
 
-**Yeni bir veritabanı değişikliği nasıl eklenir?**
-`supabase/migrations/` içine tarih önekli yeni bir `.sql` dosyası eklenir.
-Uygulanmış dosyalar değiştirilmez; kurulum programı hangilerinin uygulandığını
-izler.
+**How do I add a database change?**
+Add a new date-prefixed `.sql` file to `supabase/migrations/`. Files that
+have already been applied are not edited; the setup program tracks which ones
+have been applied.
 
-## Bilinen sınırlar
+## Known limitations
 
-- `KUR.bat` ve `otomatik-baslat.ps1` yazıldı ancak henüz gerçek bir Windows
-  bilgisayarında denenmedi.
-- Kullanıcılar kendi şifrelerini değiştiremez; şifreyi yönetici atar.
-- Arayüz yalnızca Türkçedir.
+- `KUR.bat` and `otomatik-baslat.ps1` are written but have not yet been tried
+  on a real Windows computer.
+- Users cannot change their own password; an admin sets it.
+- The interface is available in Turkish only.
 
-## Lisans
+## License
 
-Henüz bir lisans eklenmedi. Lisans eklenene kadar kod incelenebilir, ancak
-kullanım, değiştirme ve dağıtım hakları saklıdır.
+No license has been added yet. Until one is added, the code may be read, but
+all rights to use, modify and distribute it are reserved.
