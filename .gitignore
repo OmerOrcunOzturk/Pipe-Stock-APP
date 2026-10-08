@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Ortam değişkenleri
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.temp
+supabase/.branches
+
+# Yerel sunucu: gizli anahtarlar, indirilen PostgREST ve yedekler
+server/ayarlar.json
+server/postgrest.conf
+server/bin
+yedekler
+server/gunluk
+BoruStok-sunucu.zip
+
+# Kurumun kendi Excel şablonları (gerçek kişi adları içerir)
+src/features/distributions/templates/ozel
+/*.xlsx
+
+# Eski bulut ayarları
+.env.local.supabase
